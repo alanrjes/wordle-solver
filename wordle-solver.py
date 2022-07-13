@@ -5,6 +5,10 @@
 from english_words import english_words_lower_alpha_set as allWords
 from string import ascii_lowercase as alpha
 import ast
+from copy import deepcopy
+
+# set up alphabet character dictionary for later general use
+ALPHAD = {letter: [] for letter in alpha}
 
 # get only 5-letter words
 vocab = []
@@ -13,83 +17,84 @@ for word in allWords:
         pass
     elif len(word) == 5:
         vocab.append(word)
-# set up letter frequency dict
-alphaData = {}
-for letter in alpha:
-    alphaData[letter] = [0, 0, 0, 0, 0]  # one value for each position in a word
-# fill dictionary with data
-for word in vocab:
-    i=0
-    for letter in word:
-        alphaData[letter][i] +=1
-        i+=1
 
-def guess(green, yellow, excludes):  # known are lists of (letter, position)
-    # narrow down options
+# set up letter frequency dict & fill dictionary with data
+alphaFreqs = {letter: [0, 0, 0, 0, 0] for letter in alpha}
+for word in vocab:
+    for i in range(5):
+        letter = word[i]
+        alphaFreqs[letter][i] +=1
+
+# rank words by common-ness of letters
+scores = {}
+for word in vocab:
+    thisScore = 0
+    for i in range(5):
+        letter = word[i]
+        thisScore += alphaFreqs[letter][i]
+    scores[word] = thisScore
+
+# core function to pick optimal word
+def guess(green, yellow, excludes):
+    # green are dictionaries of {letter: [position, ...]}. Excluded is list of just [letter, ...]
     disqualifiedWords = []  # to avoid modifying loop while for-looping over it
     for word in vocab:
-        for letterList in green:
-            if letterList[0]:  # in case no data is entered (first guess)
-                print(green, yellow, excludes)
-                letter = letterList[0]
-                pos = letterList[1]
+        for letter in green:
+            for pos in green[letter]:
                 if word[pos] != letter:
                     disqualifiedWords.append(word)
-        for letterList in yellow:
-            if letterList[0]:
-                letter = letterList[0]
-                posList = letterList[1:]
-                if letter not in word:
-                    disqualifiedWords.append(word)
-                else:
-                    for pos in posList:
-                        if word[pos] == letter:
-                            disqualifiedWords.append(word)
-        for letter in excludes[0]:  # get rid of layered list ("if letter and...") gets rid of no-data case
-            if letter and letter in word:
+        for letter in yellow:
+            if letter not in word and yellow[letter]:  # checks key (letter) in word, but also checks value of letter in dict to ignore initialized values (empty lists)
                 disqualifiedWords.append(word)
+            else:
+                for pos in yellow[letter]:
+                    if word[pos] == letter:
+                        disqualifiedWords.append(word)
+        for letter in excludes:
+            if letter in word:
+                disqualifiedWords.append(word)
+    # reconfigure list
     disqualifiedWords = list(set(disqualifiedWords))  # removes duplicates
     for word in disqualifiedWords:
         vocab.remove(word)
-    # rank words by common-ness of letters
-    scores = {}
-    for word in vocab:
-        thisScore = 0
-        i=0
-        for letter in word:
-            thisScore += alphaData[letter][i]
-            i+=1
-        scores[word] = thisScore
+        del scores[word]
+    # return both the best guess (highest scoring qualifying word), and the number of possible guesses
     return max(scores, key=scores.get), len(vocab)
 
-# just a helper function for formatting inputs
-def ask(prompt):
-    text = input(prompt)
-    firstSplit = text.split('. ')
-    outList = []
-    for piece in firstSplit:
-        nextSplit = piece.split(', ')
-        normalList = []
-        for char in nextSplit:
-            try:
-                normalList.append(int(char))
-            except ValueError:
-                normalList.append(char)
-        outList.append(normalList)
-    return outList
+def parseResults(results, prevGuess):
+    green, yellow = deepcopy(ALPHAD), deepcopy(ALPHAD)
+    excludes = []
+    resList = results.split(' ')
+    for pos in range(5):
+        res = resList[pos]
+        char = prevGuess[pos]
+        if res == 'G':
+            green[char].append(pos)
+        elif res == 'Y':
+            yellow[char].append(pos)
+        else:
+            excludes.append(char)
+    return green, yellow, excludes
 
 # program body
-print('Instructions: Enter letters and cooresponding positions separated by ",", and further letters separated by ".". Do not end lines with ".".\n')
+print('Instructions: Enter the results from each guess in the format of _ _ _ _ _, with Y (yellow) or G (green).')
+prevGuess = guess([], [], [])[0]
+print('Starting word:', prevGuess)  # first guess should be "SAUTE"
 
-while True:
-    green = ask('Green letters -> ')
-    yellow = ask('Yellow letters, attempted positions -> ')
-    excludes = ask('Excluded letters -> ')
-    guesses, optionCount = guess(green, yellow, excludes)
-    print(optionCount, 'matching words found.', end=' ')
-
-    if optionCount:
-        print('Suggested words:', guesses)
-    else:
+for i in range(1, 5):  # start loop at second try (1)
+    guessResults = input('Results? -> ')
+    green, yellow, excludes = parseResults(guessResults, prevGuess)
+    currentGuess, optionCount = guess(green, yellow, excludes)
+    print(optionCount, 'matching word' + 's'*(optionCount!=1), 'found.', end=' ')
+    if optionCount==1:
+        print('Only guess:', currentGuess)
+        break
+    elif optionCount==0:
         print('Sorry, no guesses. :(')
         break
+    elif i==4:
+        print('Final try:', currentGuess)
+        # loop naturally concludes
+    else:
+        print('Best guess:', currentGuess)
+    prevGuess = currentGuess
