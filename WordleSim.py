@@ -3,6 +3,7 @@ from string import ascii_lowercase as alpha
 from WordleSolver import Solver
 
 ANSWERS = open('wordle-possible-answers.txt', 'r').read().split('\n')
+LOG = open('log.txt', 'w')
 
 class Wordle:
     # green (known) is 2, yellow (included) is 1, grey (not guessed) is 0, and black (excluded) is -1
@@ -16,14 +17,6 @@ class Wordle:
                      [0, 0, 0, 0, 0]]
         self.keys = {letter: 0 for letter in alpha}
 
-    def play(self):
-        wordlePlayer = Solver()
-        for i in range(6):  # 6 tries
-            myGuess = wordlePlayer.guess(self.view, self.keys)
-            self.turn(myGuess, i)
-            if all(n==2 for n in self.view[i]):  # win condition (all green)
-                return i
-
     def turn(self, guess, l):
         for i in range(5):
             if guess[i] == self.answer[i]:  # green
@@ -32,19 +25,23 @@ class Wordle:
             elif guess[i] not in self.answer:  # black
                 self.view[l][i] = -1
                 self.keys[guess[i]] = -1
-            else:  # yellow (conditionally)
 
+            else:  # yellow (conditionally)
                 if self.keys[guess[i]] == 2:  # already green in different pos
-                    places = [j for j in range(5) if guess[i] == answer[j]]  # all indices j of given letter guess[i] found in answer
+                    places = [j for j in range(5) if guess[i] == self.answer[j]]  # all indices j of given letter guess[i] found in answer
                     for j in places:
                         if 2 not in [line[j] for line in self.view]:  # check for non-green occurance of this letter at answer[j]
-                            self.view[l][j] = 1
+                            self.view[l][i] = 1
                             break
                     else:  # didn't break so all occurances are already green, no more unguessed duplicates
-                        self.view[l][j] = -1
+                        self.view[l][i] = -1
 
-                elif 0:
-                    pass  # more cases?
+                else:  # standard yellow case
+                    self.view[l][i] = 1
+                    self.keys[guess[i]] = 1
+
+        if all(n==2 for n in self.view[l]):  # win condition (all green)
+            return l  # number of guesses to win, just returns None if looses
 
 def main():
     loops = int(input('Number of rounds? -> '))
@@ -52,9 +49,21 @@ def main():
     fails = 0
     for i in range(loops):
         game = Wordle()
-        result = game.play()
-        if result:
-            total += result
+        LOG.write('Answer -> ' + game.answer + '\n\n')
+        player = Solver()
+        for i in range(6):  # 6 tries
+            playerGuess = player.guess(game.view)
+            LOG.write(playerGuess)
+            if playerGuess:  # not None
+                result = game.turn(playerGuess, i)
+                LOG.write(' ->\n' + '\n'.join(', '.join([str(i) for i in l]) for l in game.view) + '\n\n')
+            else:
+                print('View:', game.view)
+                print('Guesses:', player.guesses)
+                raise ValueError('Something went wrong, ran out of guesses.')
+            if result:
+                total += result
+                break
         else:
             fails += 1
     avg = round(total/loops, 4)
