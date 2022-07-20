@@ -45,7 +45,7 @@ class Solver:
                     return False
                 elif letter in trimmedGreen:
                     for pos in green[letter]:
-                        if letter not in [word[i] for i in range(5) if i != pos]:
+                        if letter in [word[i] for i in range(5) if i != pos]:
                             # provides list of letters that aren't that specific green letter
                             return False
             return True
@@ -68,8 +68,4 @@ class Solver:
                 letter = word[i]
                 thisScore += letterCounts[letter][i]
             scores[word] = thisScore
-        best = max(scores, key=scores.get)
-
-        if len(self.guesses) and self.guesses[-1] == best:
-            raise ValueError('Something went wrong, tried to make the same guess twice.')
-        return best
+        return max(scores, key=scores.get)
