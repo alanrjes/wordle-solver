@@ -9,7 +9,7 @@ class Solver:
     def guess(self, view):
         self.narrow_vocab(view)
         if not self.vocab:
-            return None
+            raise ValueError('Ran out of words.')
         bestGuess = self.best_word()
         self.guesses.append(bestGuess)
         return bestGuess

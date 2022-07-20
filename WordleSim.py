@@ -41,7 +41,7 @@ class Wordle:
                     self.keys[guess[i]] = 1
 
         if all(n==2 for n in self.view[l]):  # win condition (all green)
-            return l  # number of guesses to win, just returns None if looses
+            return l+1  # number of guesses to win, just returns None if looses
 
 def main():
     loops = int(input('Number of rounds? -> '))
@@ -54,13 +54,8 @@ def main():
         for i in range(6):  # 6 tries
             playerGuess = player.guess(game.view)
             LOG.write(playerGuess)
-            if playerGuess:  # not None
-                result = game.turn(playerGuess, i)
-                LOG.write(' ->\n' + '\n'.join(', '.join([str(i) for i in l]) for l in game.view) + '\n\n')
-            else:
-                print('View:', game.view)
-                print('Guesses:', player.guesses)
-                raise ValueError('Something went wrong, ran out of guesses.')
+            result = game.turn(playerGuess, i)
+            LOG.write(' ->\n' + '\n'.join(', '.join([str(i) for i in l]) for l in game.view) + '\n\n')
             if result:
                 total += result
                 break
