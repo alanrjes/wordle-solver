@@ -63,5 +63,3 @@ def main():
             fails += 1
     avg = round(total/loops, 4)
     print('In', loops, 'rounds, averaged', avg, 'guesses with', fails, 'failures.')
-
-main()
