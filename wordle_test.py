@@ -1,6 +1,8 @@
 from WordleSolver import Solver
 from WordleSim import Wordle
 
+LOG = open('log.txt', 'w')
+
 def main():
     loops = int(input('Number of rounds? -> '))
     total = 0

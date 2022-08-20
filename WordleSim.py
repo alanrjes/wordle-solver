@@ -2,7 +2,6 @@ import random
 from string import ascii_lowercase as alpha
 
 ANSWERS = open('wordle-possible-answers.txt', 'r').read().split('\n')
-LOG = open('log.txt', 'w')
 
 class Wordle:
     # green (known) is 2, yellow (included) is 1, grey (not guessed) is 0, and black (excluded) is -1
